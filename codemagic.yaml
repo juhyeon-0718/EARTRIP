@@ -1,0 +1,121 @@
+workflows:
+  development-build:
+    name: EAR TRIP - Development Build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      vars:
+        XCODE_PROJECT: "EARTrip.xcodeproj"
+        XCODE_SCHEME: "EARTrip"
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: "*"
+          include: true
+          source: true
+    scripts:
+      - name: Inspect Apple toolchain
+        script: |
+          set -e
+          xcode-select -p
+          xcodebuild -version
+          swift --version
+          xcrun simctl list runtimes
+      - name: Install XcodeGen
+        script: |
+          if ! command -v xcodegen >/dev/null; then
+            brew install xcodegen
+          fi
+      - name: Generate Xcode project
+        script: xcodegen generate --spec project.yml
+      - name: Verify generated project and shared scheme
+        script: |
+          set -e
+          test -d "$XCODE_PROJECT"
+          test -f "$XCODE_PROJECT/xcshareddata/xcschemes/$XCODE_SCHEME.xcscheme"
+          xcodebuild -project "$XCODE_PROJECT" -list
+      - name: Build unsigned simulator app
+        script: |
+          set -o pipefail
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            -derivedDataPath "$CM_BUILD_DIR/build/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO | tee "$CM_BUILD_DIR/xcodebuild-build.log"
+      - name: Run unit tests
+        script: |
+          set -o pipefail
+          SIMULATOR_ID=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.isAvailable == true and (.name | startswith("iPhone")))][0].udid')
+          if [ -z "$SIMULATOR_ID" ] || [ "$SIMULATOR_ID" = "null" ]; then
+            echo "No available iPhone simulator was found."
+            exit 1
+          fi
+          echo "Using simulator: $SIMULATOR_ID"
+          xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -configuration Debug \
+            -derivedDataPath "$CM_BUILD_DIR/build/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO | tee "$CM_BUILD_DIR/xcodebuild-test.log"
+    artifacts:
+      - xcodebuild-*.log
+      - build/DerivedData/**/Build/**/*.app
+      - build/DerivedData/**/Logs/Test/*.xcresult
+
+  testflight-build:
+    name: EAR TRIP - TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    integrations:
+      app_store_connect: EARTRIP_ASC
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.eartrip.app
+      vars:
+        XCODE_PROJECT: "EARTrip.xcodeproj"
+        XCODE_SCHEME: "EARTrip"
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          if ! command -v xcodegen >/dev/null; then
+            brew install xcodegen
+          fi
+      - name: Generate Xcode project
+        script: xcodegen generate --spec project.yml
+      - name: Verify generated project and shared scheme
+        script: |
+          set -e
+          test -d "$XCODE_PROJECT"
+          test -f "$XCODE_PROJECT/xcshareddata/xcschemes/$XCODE_SCHEME.xcscheme"
+          xcodebuild -project "$XCODE_PROJECT" -list
+      - name: Apply signing profiles
+        script: xcode-project use-profiles
+      - name: Set CI build number
+        script: agvtool new-version -all "$CM_BUILD_NUMBER"
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

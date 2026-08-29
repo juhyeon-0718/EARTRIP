@@ -1,0 +1,15 @@
+.DS_Store
+DerivedData/
+build/
+/EARTrip.xcodeproj/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserstate
+*.ipa
+*.dSYM.zip
+*.mobileprovision
+*.p12
+AuthKey_*.p8
+.env
+work/
+outputs/
