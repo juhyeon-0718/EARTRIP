@@ -1,6 +1,7 @@
 import XCTest
 @testable import EARTrip
 
+@MainActor
 final class LocationServiceTests: XCTestCase {
     func testDistanceToSameCoordinateIsZero() {
         let coordinate = Coordinate(latitude: 35.09679, longitude: 129.03053)
@@ -12,4 +13,3 @@ final class LocationServiceTests: XCTestCase {
         XCTAssertEqual(coordinates.count, 5)
     }
 }
-
