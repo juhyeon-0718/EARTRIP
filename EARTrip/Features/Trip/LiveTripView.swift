@@ -1,119 +1,133 @@
 import SwiftUI
+import MapKit
 
 struct LiveTripView: View {
     @Environment(TripEngine.self) private var engine
     @Environment(LocationService.self) private var location
-    @State private var pulse = false
+    @Environment(\.dismiss) private var dismiss
+    @State private var routes = WalkingRouteService()
+    @State private var camera: MapCameraPosition = .automatic
     @State private var presentedStory: StorySpot?
+    @State private var confirmEnd = false
 
     var body: some View {
-        ZStack {
-            EARColor.ivory.ignoresSafeArea()
-            VStack(spacing: 0) {
-                HStack {
-                    EditorialLabel(text: "Live walk")
-                    Spacer()
-                    Label(gpsText, systemImage: "location.fill")
-                        .font(.caption).foregroundStyle(EARColor.olive)
+        Map(position: $camera) {
+            ForEach(routes.courseLegs) { leg in
+                MapPolyline(leg.route.polyline).stroke(EARColor.olive.opacity(0.5), lineWidth: 4)
+            }
+            if let route = routes.nextRoute {
+                MapPolyline(route.polyline).stroke(EARColor.forest, lineWidth: 6)
+            }
+            ForEach(engine.session?.currentCourse.spots ?? []) { spot in
+                if spot.id == engine.session?.nextSpot?.id {
+                    MapCircle(center: spot.coordinate.clLocationCoordinate2D, radius: spot.triggerRadius)
+                        .foregroundStyle(EARColor.pear.opacity(0.35))
                 }
-                .padding(.horizontal, EARSpacing.page)
-                .padding(.top, 18)
-
-                Spacer()
-
-                VStack(spacing: 10) {
-                    EditorialLabel(text: "Next story")
-                    Text(distanceText)
-                        .font(.system(size: 66, weight: .light, design: .serif))
-                        .monospacedDigit()
-                    Text(engine.session?.nextSpot?.title ?? "모든 이야기를 걸었습니다")
-                        .font(.headline).multilineTextAlignment(.center)
+                Annotation(spot.title, coordinate: spot.coordinate.clLocationCoordinate2D) {
+                    Text(engine.session?.completedSpotIDs.contains(spot.id) == true ? "✓" : "\(spot.order)")
+                        .font(.headline).foregroundStyle(EARColor.forest)
+                        .frame(width: 34, height: 34)
+                        .background(spot.id == engine.session?.nextSpot?.id ? EARColor.pear : EARColor.ivory, in: Circle())
+                        .overlay(Circle().stroke(EARColor.forest, lineWidth: 1))
+                        .accessibilityLabel("이야기 \(spot.order), \(spot.title)")
                 }
-
-                ProximityField(pulse: pulse, progress: proximityProgress)
-                    .frame(height: 270)
-                    .onAppear { withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { pulse = true } }
-
-                Text(engine.session?.state == .completed ? "오늘의 걸음이 기록되었습니다." : "조금만 더 걸으면\n이야기가 시작돼요.")
-                    .font(.system(.title3, design: .serif))
-                    .multilineTextAlignment(.center).lineSpacing(5)
-
-                Spacer()
-
-                VStack(spacing: 14) {
-                    ProgressView(value: engine.session?.progress ?? 0).tint(EARColor.forest)
-                    HStack {
-                        Text(progressText).font(.caption).monospaced()
-                        Spacer()
-                        Text("화면을 내려놓아도 좋아요").font(.caption).foregroundStyle(EARColor.stone)
-                    }
-                }
-                .padding(EARSpacing.page)
-
-                if engine.session?.state == .completed, let course = engine.session?.currentCourse {
-                    NavigationLink(value: AppRoute.complete(course)) {
-                        Text("여행 기록 보기").font(.headline).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 56).background(EARColor.forest)
-                    }
-                    .buttonStyle(.plain).padding(.horizontal, EARSpacing.page)
-                } else {
-                    Button("DEMO · 다음 이야기 재생") { engine.triggerCurrentStoryForDemo() }
-                        .font(.caption.weight(.semibold)).tracking(1).foregroundStyle(EARColor.olive)
-                        .padding(.bottom, 12)
+            }
+            UserAnnotation {
+                TimelineView(.periodic(from: .now, by: 2)) { context in
+                    VStack(spacing: 0) {
+                        TravelCompanion(walking: location.speed > 0.35 && context.date.timeIntervalSince(location.lastUpdate ?? .distantPast) < 10 && engine.session?.state != .paused)
+                            .scaleEffect(0.65).frame(width: 52, height: 58)
+                        Circle().fill(.blue).frame(width: 12, height: 12)
+                            .overlay(Circle().stroke(.white, lineWidth: 2))
+                    }.accessibilityLabel("내 위치")
                 }
             }
         }
-        .navigationBarBackButtonHidden()
-        .onChange(of: engine.session?.currentSpot) { _, spot in presentedStory = spot }
-        .fullScreenCover(item: $presentedStory) { story in
-            NavigationStack { StoryPlayerView(story: story) }
+        .mapStyle(.standard(elevation: .flat))
+        .mapControls { MapCompass(); MapScaleView() }
+        .overlay(alignment: .topLeading) {
+            Label(location.isAuthorized ? "위치 연결됨" : "위치 권한이 필요해요", systemImage: "location.fill")
+                .font(.caption).padding(10).background(EARColor.ivory, in: Capsule()).padding(12)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("다음 이야기까지").font(.subheadline).foregroundStyle(EARColor.olive)
+                    Spacer()
+                    Button { followUser() } label: {
+                        Image(systemName: "location.fill").frame(width: 44, height: 44)
+                    }.accessibilityLabel("내 위치 따라가기")
+                }
+                Text(distanceText).font(.largeTitle.weight(.semibold)).monospacedDigit()
+                Text(engine.session?.nextSpot?.title ?? "모든 이야기를 만났어요").font(.headline)
+                if routes.nextRoute == nil {
+                    Text(routes.isLoading ? "도보 경로를 찾고 있어요…" : (routes.message ?? "위치를 확인하면 도보 경로를 안내해요."))
+                        .font(.footnote).foregroundStyle(EARColor.olive)
+                } else {
+                    Text("초록색 도보 경로를 따라 이동해주세요").font(.subheadline)
+                }
+                ProgressView(value: engine.session?.progress ?? 0).tint(EARColor.olive)
+                Text("이야기 \(engine.session?.completedSpotIDs.count ?? 0) / \(engine.session?.currentCourse.spots.count ?? 0)")
+                    .font(.caption).foregroundStyle(EARColor.olive)
+                if engine.session?.state == .completed, let course = engine.session?.currentCourse {
+                    NavigationLink("여행 기록 보기", value: AppRoute.complete(course)).frame(minHeight: 44)
+                } else if let story = engine.session?.currentSpot {
+                    Button("이야기 플레이어 열기") { presentedStory = story }.frame(minHeight: 44)
+                } else {
+                    Button {
+                        engine.session?.state == .paused ? engine.resumeTrip() : engine.pauseTrip()
+                    } label: {
+                        Label(engine.session?.state == .paused ? "다시 출발" : "잠깐 쉬기",
+                              systemImage: engine.session?.state == .paused ? "play.fill" : "pause.fill")
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(EARColor.forest))
+                    }
+                }
+                #if DEBUG
+                Button("체험 · 다음 이야기 재생") { engine.triggerCurrentStoryForDemo() }.font(.caption)
+                #endif
+            }.padding(.horizontal, 24).padding(.bottom, 12)
+                .foregroundStyle(EARColor.ink).background(EARColor.ivory)
+        }
+        .navigationTitle("자갈치 골목 여행").navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden()
+        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { Button("종료") { confirmEnd = true } }
+        }
+        .confirmationDialog("여행을 종료할까요?", isPresented: $confirmEnd, titleVisibility: .visible) {
+            Button("여행 종료", role: .destructive) { engine.endTrip(); dismiss() }
+        }
+        .task {
+            followUser()
+            presentedStory = engine.session?.currentSpot
+            if let course = engine.session?.currentCourse { await routes.loadCourse(course) }
+        }
+        .task(id: engine.session?.nextSpot?.id) {
+            routes.clearNextRoute()
+            while !Task.isCancelled {
+                if let origin = location.coordinate, let spot = engine.session?.nextSpot,
+                   (location.horizontalAccuracy ?? .infinity) <= 65 {
+                    await routes.update(from: origin, to: spot)
+                }
+                do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            }
+        }
+        .onChange(of: engine.session?.currentSpot) { _, spot in presentedStory = spot }
+        .fullScreenCover(item: $presentedStory) { story in NavigationStack { StoryPlayerView(story: story) } }
         .earTripDestinations()
     }
 
-    private var gpsText: String {
-        guard let accuracy = location.horizontalAccuracy else { return location.mode == .mock ? "MOCK GPS" : "GPS SEARCHING" }
-        return "GPS ±\(Int(accuracy))M"
-    }
-
     private var distanceText: String {
-        guard let distance = engine.session?.distanceToNextSpot else { return "— m" }
-        return distance >= 1000 ? String(format: "%.1f km", distance / 1000) : "\(Int(distance)) m"
+        if let route = routes.nextRoute { return "\(Int(route.distance)) m · 도보" }
+        guard let spot = engine.session?.nextSpot,
+              let distance = location.distance(to: spot) else { return "— m" }
+        return "\(Int(distance)) m · 직선 거리"
     }
 
-    private var progressText: String {
-        let done = engine.session?.completedSpotIDs.count ?? 0
-        let total = engine.session?.currentCourse.spots.count ?? 0
-        return String(format: "%02d / %02d", done, total)
-    }
-
-    private var proximityProgress: Double {
-        guard let distance = engine.session?.distanceToNextSpot else { return 0.12 }
-        return max(0.08, min(1, 1 - distance / 500))
-    }
-}
-
-private struct ProximityField: View {
-    let pulse: Bool
-    let progress: Double
-
-    var body: some View {
-        ZStack {
-            ForEach(0..<3) { index in
-                Circle()
-                    .stroke(EARColor.olive.opacity(0.18 - Double(index) * 0.035), lineWidth: 1)
-                    .frame(width: CGFloat(90 + index * 62), height: CGFloat(90 + index * 62))
-                    .scaleEffect(pulse ? 1.04 : 0.96)
-            }
-            Circle().fill(EARColor.forest.opacity(0.12)).frame(width: 64, height: 64)
-            Circle().fill(EARColor.forest).frame(width: 13, height: 13)
-            Circle()
-                .fill(EARColor.sand)
-                .overlay(Circle().stroke(EARColor.ivory, lineWidth: 3))
-                .frame(width: 22, height: 22)
-                .offset(y: CGFloat(-35 - 72 * progress))
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("다음 이야기까지의 거리 감지 영역")
+    private func followUser() {
+        let center = engine.session?.currentCourse.startingCoordinate ?? MockCatalog.jagalchi.startingCoordinate
+        camera = .userLocation(followsHeading: true, fallback: .region(MKCoordinateRegion(
+            center: center.clLocationCoordinate2D, span: MKCoordinateSpan(latitudeDelta: 0.012, longitudeDelta: 0.012))))
     }
 }

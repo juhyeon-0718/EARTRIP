@@ -9,7 +9,7 @@ struct TripCompleteView: View {
             VStack(spacing: 34) {
                 EditorialLabel(text: "Trip complete")
                 VStack(spacing: 4) {
-                    Text("JAGALCHI").font(.system(size: 42, weight: .medium, design: .serif)).tracking(1)
+                    Text("JAGALCHI").font(.system(.largeTitle, design: .default, weight: .semibold)).tracking(1)
                     Text("BUSAN").font(.caption.weight(.semibold)).tracking(4).foregroundStyle(EARColor.olive)
                 }
 
@@ -21,7 +21,7 @@ struct TripCompleteView: View {
                     MetricItem(value: "52", label: "MIN")
                 }
                 Text("한 도시를 통과한 것이 아니라,\n잠시 그 도시의 이야기를 들었습니다.")
-                    .font(.system(.title3, design: .serif)).multilineTextAlignment(.center).lineSpacing(6)
+                    .font(.system(.title3, design: .default)).multilineTextAlignment(.center).lineSpacing(6)
                     .foregroundStyle(EARColor.olive)
             }
             .frame(maxWidth: .infinity)
