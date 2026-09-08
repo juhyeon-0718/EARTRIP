@@ -9,12 +9,12 @@ struct StoryPlayerView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                PhotoPlaceholder(height: 260)
+                PhotoPlaceholder(height: 260, imageName: story.image ?? course?.coverImage, label: story.title)
                     .overlay(alignment: .bottomTrailing) { TravelCompanion().padding(24) }
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                 Text("이야기 \(story.order)").font(.subheadline).foregroundStyle(EARColor.olive)
                 Text(story.title).font(.title.weight(.semibold)).multilineTextAlignment(.center)
-                Text(engine.session?.currentCourse.city ?? "부산").foregroundStyle(EARColor.olive)
+                if let course { Text(course.city).foregroundStyle(EARColor.olive) }
                 VStack(spacing: 4) {
                     Slider(value: Binding(get: { audio.progress }, set: { audio.seek(to: $0 * audio.duration) }), in: 0...1)
                         .tint(EARColor.olive).accessibilityLabel("이야기 재생 위치")
@@ -40,7 +40,9 @@ struct StoryPlayerView: View {
                     dismiss()
                 }.frame(minHeight: 44)
                 Divider()
-                NavigationLink(value: AppRoute.story(story)) { Text("이 장소가 궁금해요 →").frame(minHeight: 44) }
+                if let course {
+                    NavigationLink(value: AppRoute.story(story, course: course)) { Text("이 장소가 궁금해요 →").frame(minHeight: 44) }
+                }
             }.padding(EARSpacing.page)
         }
         .foregroundStyle(EARColor.ink).background(EARColor.ivory.ignoresSafeArea())
@@ -48,6 +50,10 @@ struct StoryPlayerView: View {
         .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
         .onChange(of: engine.session?.currentSpot) { _, spot in if spot == nil { dismiss() } }
         .earTripDestinations()
+    }
+    private var course: Course? {
+        guard let course = engine.session?.currentCourse, course.id == story.courseID else { return nil }
+        return course
     }
     private func control(_ icon: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: icon).font(.title2).frame(width: 56, height: 56) }.accessibilityLabel(label)

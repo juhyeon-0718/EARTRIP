@@ -2,14 +2,15 @@ import SwiftUI
 
 struct StoryDetailView: View {
     let story: StorySpot
+    let course: Course
     @Environment(AudioService.self) private var audio
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                PhotoPlaceholder(height: 350, label: "STORY \(String(format: "%02d", story.order))")
+                PhotoPlaceholder(height: 350, imageName: story.image ?? course.coverImage, label: story.title)
                 VStack(alignment: .leading, spacing: 24) {
-                    EditorialLabel(text: "Jagalchi · Busan")
+                    EditorialLabel(text: course.city)
                     Text(story.title).font(.system(.largeTitle, design: .default, weight: .medium))
                     Text(story.description).font(.body).lineSpacing(7).foregroundStyle(EARColor.olive)
 
@@ -32,7 +33,7 @@ struct StoryDetailView: View {
                     if let nextStory {
                         EditorialLabel(text: "Next story")
                             .padding(.top, 16)
-                        NavigationLink(value: AppRoute.story(nextStory)) {
+                        NavigationLink(value: AppRoute.story(nextStory, course: course)) {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(String(format: "%02d", nextStory.order)).font(.caption).monospaced()
                                 Text(nextStory.title).font(.system(.title3, design: .default, weight: .medium))
@@ -54,6 +55,6 @@ struct StoryDetailView: View {
     }
 
     private var nextStory: StorySpot? {
-        MockCatalog.jagalchi.spots.first(where: { $0.order == story.order + 1 })
+        course.story(after: story)
     }
 }
