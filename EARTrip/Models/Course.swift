@@ -12,6 +12,12 @@ struct Course: Identifiable, Codable, Hashable, Sendable {
     let price: Decimal
     let startingCoordinate: Coordinate
     let spots: [StorySpot]
+
+    func story(after story: StorySpot) -> StorySpot? {
+        guard story.courseID == id, spots.contains(where: { $0.id == story.id }) else { return nil }
+        return spots.filter { $0.courseID == id && $0.order > story.order }
+            .min(by: { $0.order < $1.order })
+    }
 }
 
 struct StorySpot: Identifiable, Codable, Hashable, Sendable {
@@ -28,4 +34,3 @@ struct StorySpot: Identifiable, Codable, Hashable, Sendable {
     let duration: TimeInterval
     let image: String?
 }
-
