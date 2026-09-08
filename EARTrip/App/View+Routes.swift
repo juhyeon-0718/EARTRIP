@@ -7,7 +7,7 @@ extension View {
             case .course(let course): CourseDetailView(course: course)
             case .preparation(let course): TripPreparationView(course: course)
             case .live: LiveTripView()
-            case .story(let story): StoryDetailView(story: story)
+            case .story(let story, let course): StoryDetailView(story: story, course: course)
             case .complete(let course): TripCompleteView(course: course)
             }
         }
