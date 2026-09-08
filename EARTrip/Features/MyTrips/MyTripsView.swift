@@ -6,21 +6,21 @@ struct MyTripsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-                EditorialLabel(text: "Walking archive")
+                EditorialLabel(text: "나의 여행 기록")
                 Text("나의 여행 기록")
-                    .font(.system(size: 40, weight: .medium, design: .serif))
+                    .font(.system(.largeTitle, design: .default, weight: .semibold))
 
                 if history.records.isEmpty {
                     PhotoPlaceholder(height: 250, dark: true, label: "YOUR FIRST WALK")
                     Text("아직 기록된 걸음이 없습니다.\n첫 도시의 목소리를 만나보세요.")
-                        .font(.system(.title3, design: .serif)).lineSpacing(6)
+                        .font(.system(.title3, design: .default)).lineSpacing(6)
                         .foregroundStyle(EARColor.olive)
                 } else {
                     ForEach(history.records) { record in
                         VStack(alignment: .leading, spacing: 14) {
                             PhotoPlaceholder(height: 210, dark: true)
                             EditorialLabel(text: record.course.city)
-                            Text(record.course.title).font(.system(.title2, design: .serif, weight: .medium))
+                            Text(record.course.title).font(.system(.title2, design: .default, weight: .medium))
                             HStack {
                                 Text("\(record.course.distanceKilometers, specifier: "%.1f") KM")
                                 Text("\(record.course.spots.count) STORIES")
