@@ -6,7 +6,7 @@ struct CourseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                PhotoPlaceholder(height: 410)
+                PhotoPlaceholder(height: 410, imageName: course.coverImage, label: course.title)
                 VStack(alignment: .leading, spacing: 24) {
                     EditorialLabel(text: course.city)
                     Text(course.title)
