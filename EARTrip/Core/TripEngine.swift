@@ -8,6 +8,7 @@ final class TripEngine {
     private let locationService: LocationService
     private let audioService: AudioService
     private var armedSpotID: UUID?
+    @ObservationIgnored private var playbackTask: Task<Void, Never>?
 
     init(locationService: LocationService, audioService: AudioService) {
         self.locationService = locationService
@@ -19,6 +20,8 @@ final class TripEngine {
     }
 
     func prepare(course: Course) {
+        playbackTask?.cancel()
+        audioService.stop()
         var newSession = TripSession(currentCourse: course)
         newSession.nextSpot = course.spots.sorted(by: { $0.order < $1.order }).first
         newSession.state = .preparing
@@ -41,6 +44,24 @@ final class TripEngine {
         session?.state = .paused
     }
 
+    func pauseTrip() {
+        guard session?.state == .walking else { return }
+        session?.state = .paused
+    }
+
+    func resumeTrip() {
+        guard session?.state == .paused, session?.currentSpot == nil else { return }
+        start()
+    }
+
+    func endTrip() {
+        playbackTask?.cancel()
+        audioService.stop()
+        locationService.stopUpdating()
+        session = nil
+        armedSpotID = nil
+    }
+
     func resumeStory() {
         audioService.resume()
         session?.state = .storyPlaying
@@ -48,6 +69,7 @@ final class TripEngine {
 
     func completeCurrentStory() {
         guard var session, let spot = session.currentSpot else { return }
+        playbackTask?.cancel()
         audioService.stop()
         session.completedSpotIDs.insert(spot.id)
         session.currentSpot = nil
@@ -88,8 +110,11 @@ final class TripEngine {
         session.currentSpot = spot
         session.state = .storyPlaying
         self.session = session
-        Task {
+        playbackTask?.cancel()
+        playbackTask = Task {
+            guard !Task.isCancelled else { return }
             await audioService.load(spot)
+            guard !Task.isCancelled, self.session?.currentSpot?.id == spot.id else { return }
             audioService.play()
         }
     }
