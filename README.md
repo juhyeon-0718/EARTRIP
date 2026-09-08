@@ -213,7 +213,7 @@ TestFlight workflow는 이 파일을 archive 전에 검사합니다. 아이콘�
 ### Version과 build number
 
 - Marketing Version은 `project.yml`의 `0.1.0`입니다.
-- Build Number는 Codemagic이 제공하는 양의 정수 `CM_BUILD_NUMBER`를 archive 직전에 `agvtool`로 적용합니다.
+- Build Number는 Codemagic 공식 변수 `PROJECT_BUILD_NUMBER`에 1을 더해 archive 직전에 `agvtool`로 적용합니다. 이 카운터는 앱의 모든 workflow에서 증가합니다. 값이 없거나 숫자가 아니면 명확한 오류로 중단하고, 적용 후 번호가 일치하는지 확인합니다.
 - 첫 성공 build는 예를 들어 `0.1.0 (12)` 형태로 TestFlight에 표시됩니다.
 - App Store Connect는 동일 version/build 조합의 재업로드를 허용하지 않습니다. Codemagic 앱을 새로 만들거나 build counter가 기존 업로드보다 낮아졌다면 기존 최대값보다 높은 build number로 실행해야 합니다. 이후에는 App Store Apple ID를 이용해 최신 TestFlight build number + 1을 조회하는 방식으로 확장할 수 있습니다.
 

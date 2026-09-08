@@ -133,8 +133,20 @@ workflows:
       - name: Set CI build number
         script: |
           set -e
-          agvtool new-version -all "$CM_BUILD_NUMBER"
-          test "$(agvtool what-version -terse)" = "$CM_BUILD_NUMBER"
+          case "${PROJECT_BUILD_NUMBER:-}" in
+            ''|*[!0-9]*)
+              echo "PROJECT_BUILD_NUMBER must be a non-negative integer supplied by Codemagic."
+              exit 1
+              ;;
+          esac
+          NEXT_BUILD_NUMBER=$(python3 -c 'import os; print(int(os.environ["PROJECT_BUILD_NUMBER"]) + 1)')
+          echo "Applying build number: $NEXT_BUILD_NUMBER"
+          agvtool new-version -all "$NEXT_BUILD_NUMBER"
+          ACTUAL_BUILD_NUMBER=$(agvtool what-version -terse)
+          if [ "$ACTUAL_BUILD_NUMBER" != "$NEXT_BUILD_NUMBER" ]; then
+            echo "Build number verification failed: expected $NEXT_BUILD_NUMBER, got $ACTUAL_BUILD_NUMBER"
+            exit 1
+          fi
       - name: Apply App Store signing profile
         script: xcode-project use-profiles
       - name: Build signed IPA
