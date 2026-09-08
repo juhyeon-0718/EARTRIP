@@ -3,6 +3,32 @@ import XCTest
 
 @MainActor
 final class TripEngineTests: XCTestCase {
+    func testPausedTripDoesNotTriggerAndResumeUsesLatestLocation() {
+        let location = LocationService(mode: .mock)
+        let engine = TripEngine(locationService: location, audioService: AudioService())
+        engine.prepare(course: MockCatalog.jagalchi)
+        engine.start()
+        engine.pauseTrip()
+        location.pushMockLocation(MockCatalog.jagalchi.spots[0].coordinate)
+        XCTAssertNil(engine.session?.currentSpot)
+        XCTAssertEqual(engine.session?.state, .paused)
+        engine.resumeTrip()
+        XCTAssertEqual(engine.session?.state, .storyPlaying)
+        engine.endTrip()
+    }
+
+    func testEndingTripPreventsPendingPlayback() async {
+        let audio = AudioService()
+        let engine = TripEngine(locationService: LocationService(mode: .mock), audioService: audio)
+        engine.prepare(course: MockCatalog.jagalchi)
+        engine.start()
+        engine.triggerCurrentStoryForDemo()
+        engine.endTrip()
+        await Task.yield()
+        XCTAssertNil(engine.session)
+        XCTAssertFalse(audio.isPlaying)
+    }
+
     func testPrepareSelectsFirstStory() {
         let location = LocationService(mode: .mock)
         let audio = AudioService()
@@ -47,4 +73,3 @@ final class TripEngineTests: XCTestCase {
         XCTAssertTrue(engine.session?.completedSpotIDs.isEmpty == true)
     }
 }
-
