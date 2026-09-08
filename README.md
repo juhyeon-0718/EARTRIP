@@ -133,35 +133,102 @@ GitHub 저장소의 **Actions** 탭에서 결과를 볼 수 있습니다.
 
 이 workflow는 Apple 인증 정보 없이 XcodeGen, shared scheme 검증, unsigned simulator build와 unit test를 실행합니다. 특정 iPhone 모델 이름을 고정하지 않고 runner에 설치된 사용 가능한 simulator를 선택합니다. 빌드된 `.app`, test result와 로그를 artifact로 남깁니다.
 
-## TestFlight 연결
+## 첫 TestFlight 배포 방법
 
-`EAR TRIP - TestFlight` workflow는 인증 정보가 준비된 이후 수동 실행하는 배포 경로입니다. 저장소에는 인증서, provisioning profile, API private key를 넣지 않습니다.
+`EAR TRIP - TestFlight` workflow는 GitHub의 검증된 commit에서 Release archive를 만들고, Codemagic이 App Store용 signing asset을 적용해 IPA를 생성한 뒤 TestFlight에 업로드하는 수동 배포 경로입니다. 인증서, provisioning profile, API private key는 저장소나 YAML에 넣지 않습니다.
 
-Codemagic에서 다음을 설정해야 합니다.
+### 1. Apple Developer에서 App ID 등록
 
-1. App Store Connect에서 앱을 만들고 Bundle ID `com.eartrip.app`을 등록
-2. App Store Connect API Key 생성(App Manager 권한 권장)
-3. Codemagic **Team settings → Integrations → App Store Connect**에 다음 값 등록
-   - Issuer ID
-   - Key ID
-   - API private key (`.p8` 내용)
-4. integration 이름을 정확히 `EARTRIP_ASC`로 지정
-5. Codemagic **Code signing identities**에서 해당 Bundle ID의 Apple Distribution certificate와 App Store provisioning profile을 fetch 또는 upload
-6. TestFlight workflow 실행
+1. [Apple Developer](https://developer.apple.com/account/)에 Account Holder 또는 Admin 권한 계정으로 로그인합니다.
+2. **Certificates, Identifiers & Profiles → Identifiers → + → App IDs → App**을 선택합니다.
+3. Description은 `EAR TRIP`, Bundle ID는 **Explicit** `com.eartrip.app`으로 등록합니다.
+4. 현재 단계에서는 추가 capability를 켜지 않습니다. 위치 When-In-Use와 background audio는 entitlement가 아니라 `Info.plist` 설정으로 동작합니다. Background Location, Push Notifications, Sign in with Apple 등은 아직 활성화하지 않습니다.
 
-Codemagic이 integration을 통해 profile을 적용하고, `CM_BUILD_NUMBER`를 build number로 설정하고, signed IPA를 만들어 TestFlight에 제출합니다.
+### 2. App Store Connect에 앱 생성
 
-필요한 비밀 값은 Codemagic UI에만 저장합니다.
+1. [App Store Connect](https://appstoreconnect.apple.com/)에서 **My Apps → + → New App**을 선택합니다.
+2. Platforms는 iOS, Name은 `EAR TRIP`, Primary Language는 한국어를 선택합니다.
+3. 방금 등록한 Bundle ID `com.eartrip.app`을 선택합니다.
+4. SKU는 계정 내부에서 고유한 값(예: `EARTRIP-IOS`)을 입력합니다.
+5. 앱을 만든 뒤 **App Information**에서 표시되는 Apple ID 숫자를 기록합니다. 현재 workflow에는 필요하지 않지만, 이후 App Store의 최신 build number를 조회하는 방식으로 바꿀 때 사용합니다.
 
-| 값 | 저장 위치 | 저장소 commit |
-|---|---|---|
-| App Store Connect Issuer ID | `EARTRIP_ASC` integration | 금지 |
-| App Store Connect Key ID | `EARTRIP_ASC` integration | 금지 |
-| App Store Connect `.p8` private key | `EARTRIP_ASC` integration | 금지 |
-| Apple Distribution certificate/private key | Codemagic code signing | 금지 |
-| App Store provisioning profile | Codemagic code signing | 금지 |
+### 3. App Store Connect API key 생성
 
-팀에서 environment group 방식으로 바꿀 경우 secret 이름은 `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY`로 통일하는 것을 권장합니다. 현재 YAML은 더 안전한 Codemagic integration 방식을 사용합니다.
+1. App Store Connect의 **Users and Access → Integrations → App Store Connect API → Team Keys**로 이동합니다.
+2. `EARTRIP Codemagic` 같은 이름으로 키를 만들고 App Manager 권한을 부여합니다.
+3. 화면에 표시되는 **Issuer ID**와 **Key ID**를 기록합니다.
+4. `.p8` private key를 다운로드합니다. Apple은 이 파일을 한 번만 내려받게 하므로 안전한 비밀 저장소에 보관합니다.
+
+### 4. Codemagic integration 연결
+
+1. Codemagic에서 GitHub 계정을 연결하고 `juhyeon-0718/EARTRIP` 저장소를 앱으로 추가합니다.
+2. **Team settings → Integrations → Developer Portal / App Store Connect**에서 새 integration을 만듭니다.
+3. 이름을 YAML과 정확히 같은 `EARTRIP_ASC`로 지정합니다.
+4. Issuer ID, Key ID, `.p8` private key를 입력하고 연결을 검증합니다.
+5. 이 값들은 Codemagic integration에만 저장하고 GitHub secret이나 저장소 파일로 복사하지 않습니다.
+
+### 5. App Store signing asset 준비
+
+Codemagic의 automatic signing asset 선택을 사용합니다. `codemagic.yaml`의 `ios_signing`이 `app_store` 배포용 `com.eartrip.app` certificate/profile을 찾고, `xcode-project use-profiles`가 생성된 Xcode project에 적용합니다.
+
+1. Codemagic **Team settings → Code signing identities → iOS certificates**에서 `EARTRIP_ASC` integration으로 Apple Distribution certificate를 생성하거나, Codemagic에서 과거 생성한 기존 certificate를 가져옵니다. 새로 생성했다면 화면에서 한 번만 제공되는 certificate 파일과 password를 안전하게 보관한 뒤 같은 화면의 Upload certificate 탭에 등록합니다.
+2. Apple Developer에서 `com.eartrip.app`용 **App Store** provisioning profile을 만들고 위 Distribution certificate를 연결합니다. Codemagic UI가 profile 생성/fetch를 지원하면 같은 integration을 사용해 가져옵니다.
+3. Codemagic **iOS provisioning profiles**에 해당 profile이 표시되고 Bundle ID와 Team이 certificate와 일치하는지 확인합니다.
+
+다른 환경에서 만든 certificate는 private key가 포함된 `.p12`와 password가 있어야 Codemagic에 업로드할 수 있습니다. Mac이 없는 경우 Codemagic에서 certificate를 생성한 뒤 즉시 다운로드·재등록하는 경로가 가장 단순합니다.
+
+### 6. Production App Icon 추가
+
+TestFlight/App Store archive에는 실제 App Icon이 필요합니다. 현재 저장소는 빈 1024×1024 universal iOS 슬롯만 제공하며 임의의 production icon은 포함하지 않습니다.
+
+1. alpha channel이 없는 최종 1024×1024 PNG를 `EARTrip/Resources/Assets.xcassets/AppIcon.appiconset/`에 추가합니다.
+2. `Contents.json`의 1024×1024 항목에 실제 filename을 지정합니다. 예를 들어 파일명이 `AppIcon-1024.png`이면 해당 항목에 `"filename" : "AppIcon-1024.png"`를 추가합니다.
+3. 변경을 GitHub에 push하고 GitHub Actions가 다시 green인지 확인합니다.
+
+TestFlight workflow는 이 파일을 archive 전에 검사합니다. 아이콘이 없거나 manifest에 filename이 없으면 Apple 업로드 단계까지 진행하지 않고 원인을 명시해 실패합니다.
+
+### 7. TestFlight workflow 실행
+
+1. Codemagic 앱의 **Start new build**를 선택합니다.
+2. GitHub Actions를 통과한 branch/commit을 선택합니다.
+3. workflow는 **EAR TRIP - TestFlight** (`testflight-build`)를 선택합니다.
+4. build를 시작하고 `Generate Xcode project → Validate TestFlight prerequisites → Set CI build number → Apply App Store signing profile → Build signed IPA → Publish` 순서가 성공하는지 확인합니다.
+5. App Store Connect **My Apps → EAR TRIP → TestFlight**에서 processing이 끝난 build를 확인하고 Internal Testing group에 추가합니다.
+
+### 필요한 값과 저장 위치
+
+| 값 | 어디에서 확인/생성하는가 | 어디에 입력하는가 | 비밀 여부 |
+|---|---|---|---|
+| Bundle ID `com.eartrip.app` | Apple Developer Identifiers | `project.yml`, Codemagic signing 조건, App Store Connect app | 공개 설정 |
+| Apple Developer Team ID | Apple Developer **Membership details** | 별도 YAML 입력은 불필요하며 certificate/profile의 Team 일치 확인에 사용 | 계정 정보 |
+| App Store Connect Issuer ID | Users and Access → Integrations → App Store Connect API | Codemagic `EARTRIP_ASC` integration | 보호 필요 |
+| App Store Connect API Key ID | 같은 API key 화면 | Codemagic `EARTRIP_ASC` integration | 보호 필요 |
+| App Store Connect `.p8` private key | API key 생성 직후 1회 다운로드 | Codemagic `EARTRIP_ASC` integration | secret, commit 금지 |
+| Apple Distribution certificate/private key | Codemagic 또는 Apple Developer Certificates | Codemagic Code signing identities | secret, commit 금지 |
+| App Store provisioning profile | Apple Developer Profiles 또는 Codemagic fetch | Codemagic iOS provisioning profiles | commit 금지 |
+| App Store Apple ID | App Store Connect → App Information | 현재는 입력 불필요, 향후 원격 build number 조회 시 사용 | 공개 숫자 |
+
+현재 integration 방식에서는 별도의 GitHub secret이나 Codemagic environment group이 필요하지 않습니다. 환경 변수 방식으로 전환할 경우에만 `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY` 같은 secret을 사용하고 모두 secure로 표시합니다.
+
+### Version과 build number
+
+- Marketing Version은 `project.yml`의 `0.1.0`입니다.
+- Build Number는 Codemagic이 제공하는 양의 정수 `CM_BUILD_NUMBER`를 archive 직전에 `agvtool`로 적용합니다.
+- 첫 성공 build는 예를 들어 `0.1.0 (12)` 형태로 TestFlight에 표시됩니다.
+- App Store Connect는 동일 version/build 조합의 재업로드를 허용하지 않습니다. Codemagic 앱을 새로 만들거나 build counter가 기존 업로드보다 낮아졌다면 기존 최대값보다 높은 build number로 실행해야 합니다. 이후에는 App Store Apple ID를 이용해 최신 TestFlight build number + 1을 조회하는 방식으로 확장할 수 있습니다.
+
+### Archive 설정과 iOS capability
+
+- shared scheme: `EARTrip`
+- Archive configuration: `Release`
+- Bundle ID: `com.eartrip.app`
+- Deployment target: iOS 17.0
+- Code signing style: Xcode project는 Automatic이며, Codemagic archive 시 matching App Store profile을 주입합니다.
+- 위치: `NSLocationWhenInUseUsageDescription`만 선언합니다. 현재 앱은 background location을 구현하지 않았으므로 `location` background mode와 Location Updates capability를 추가하지 않습니다.
+- 오디오: `UIBackgroundModes`의 `audio`만 선언합니다. 별도 entitlement는 필요하지 않습니다.
+- Push, iCloud, Sign in with Apple, Associated Domains 등 사용하지 않는 capability는 활성화하지 않습니다.
+
+App Store Connect가 export compliance 질문을 표시하면 현재 앱이 Apple의 URLSession/TLS만 사용하고 별도 암호화 기능을 포함하지 않는지 실제 릴리스 기준으로 확인한 후 응답합니다. 이 항목은 법적 확인이므로 저장소에서 임의로 고정하지 않습니다.
 
 ## Mock course와 위치 테스트
 
@@ -201,7 +268,7 @@ EARTrip/MockData/JagalchiCoordinates.swift
 - analytics, push notification, admin dashboard
 - production 사진, 음원, App Icon
 
-빈 `AppIcon.appiconset`은 향후 production icon의 위치만 예약합니다. 현재 simulator compile에서는 App Icon 이름을 build setting에 강제하지 않으므로 이미지가 없어도 build가 깨지지 않습니다. TestFlight/App Store 제출 전에는 반드시 유효한 1024×1024 App Icon을 추가해야 합니다.
+빈 `AppIcon.appiconset`은 향후 production icon의 위치만 예약합니다. Debug simulator build에는 App Icon 이름을 강제하지 않지만 Release archive에는 `AppIcon`을 지정합니다. TestFlight workflow의 사전 검사가 실제 1024×1024 PNG와 manifest filename을 확인하므로 제출 전 production icon 추가가 필수입니다.
 
 ## 출시 전 체크리스트
 

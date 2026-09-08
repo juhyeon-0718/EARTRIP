@@ -9,7 +9,9 @@ build/
 *.dSYM.zip
 *.mobileprovision
 *.p12
-AuthKey_*.p8
+*.p8
+*.cer
+*.key
 .env
 work/
 outputs/
