@@ -10,7 +10,7 @@ struct StoryDetailView: View {
                 PhotoPlaceholder(height: 350, label: "STORY \(String(format: "%02d", story.order))")
                 VStack(alignment: .leading, spacing: 24) {
                     EditorialLabel(text: "Jagalchi · Busan")
-                    Text(story.title).font(.system(.largeTitle, design: .serif, weight: .medium))
+                    Text(story.title).font(.system(.largeTitle, design: .default, weight: .medium))
                     Text(story.description).font(.body).lineSpacing(7).foregroundStyle(EARColor.olive)
 
                     HStack {
@@ -35,7 +35,7 @@ struct StoryDetailView: View {
                         NavigationLink(value: AppRoute.story(nextStory)) {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(String(format: "%02d", nextStory.order)).font(.caption).monospaced()
-                                Text(nextStory.title).font(.system(.title3, design: .serif, weight: .medium))
+                                Text(nextStory.title).font(.system(.title3, design: .default, weight: .medium))
                                 Spacer()
                                 Image(systemName: "arrow.right")
                             }
