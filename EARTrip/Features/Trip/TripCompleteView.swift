@@ -9,11 +9,11 @@ struct TripCompleteView: View {
             VStack(spacing: 34) {
                 EditorialLabel(text: "Trip complete")
                 VStack(spacing: 4) {
-                    Text("JAGALCHI").font(.system(.largeTitle, design: .default, weight: .semibold)).tracking(1)
-                    Text("BUSAN").font(.caption.weight(.semibold)).tracking(4).foregroundStyle(EARColor.olive)
+                    Text(course.title).font(.system(.largeTitle, design: .default, weight: .semibold)).multilineTextAlignment(.center)
+                    Text(course.city).font(.subheadline).foregroundStyle(EARColor.olive)
                 }
 
-                TicketMark()
+                TicketMark(city: course.city)
 
                 HStack(spacing: 40) {
                     MetricItem(value: String(format: "%.1f", course.distanceKilometers), label: "KM")
@@ -35,6 +35,7 @@ struct TripCompleteView: View {
 }
 
 private struct TicketMark: View {
+    let city: String
     var body: some View {
         ZStack {
             Circle().stroke(EARColor.forest.opacity(0.28), lineWidth: 1).frame(width: 170, height: 170)
@@ -46,6 +47,6 @@ private struct TicketMark: View {
             }.foregroundStyle(EARColor.forest).rotationEffect(.degrees(-7))
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("EAR TRIP 부산 여행 완료 기록")
+        .accessibilityLabel("EAR TRIP \(city) 여행 완료 기록")
     }
 }

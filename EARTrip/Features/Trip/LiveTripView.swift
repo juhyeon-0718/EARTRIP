@@ -91,7 +91,7 @@ struct LiveTripView: View {
             }.padding(.horizontal, 24).padding(.bottom, 12)
                 .foregroundStyle(EARColor.ink).background(EARColor.ivory)
         }
-        .navigationTitle("자갈치 골목 여행").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(engine.session?.currentCourse.title ?? "여행 지도").navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
@@ -138,7 +138,10 @@ struct LiveTripView: View {
     }
 
     private func followUser() {
-        let center = engine.session?.currentCourse.startingCoordinate ?? MockCatalog.jagalchi.startingCoordinate
+        guard let center = engine.session?.currentCourse.startingCoordinate else {
+            camera = .automatic
+            return
+        }
         camera = .userLocation(followsHeading: true, fallback: .region(MKCoordinateRegion(
             center: center.clLocationCoordinate2D, span: MKCoordinateSpan(latitudeDelta: 0.012, longitudeDelta: 0.012))))
     }
