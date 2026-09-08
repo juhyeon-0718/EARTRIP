@@ -9,13 +9,16 @@ struct ExploreView: View {
                     .font(.system(.largeTitle, design: .default, weight: .semibold))
 
                 ForEach(Array(MockCatalog.cities.enumerated()), id: \.element) { index, city in
-                    if city == "부산" {
-                        NavigationLink(value: AppRoute.course(MockCatalog.jagalchi)) {
-                            CityRow(city: city, number: index + 1, available: true)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        CityRow(city: city, number: index + 1, available: false)
+                    let courses = MockCatalog.courses.filter { $0.city == city }
+                    CityRow(city: city, number: index + 1, count: courses.count)
+                    ForEach(courses) { course in
+                        NavigationLink(value: AppRoute.course(course)) {
+                            HStack {
+                                Text(course.title).font(.headline)
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                            }.frame(minHeight: 44)
+                        }.buttonStyle(.plain)
                     }
                 }
             }
@@ -32,15 +35,15 @@ struct ExploreView: View {
 private struct CityRow: View {
     let city: String
     let number: Int
-    let available: Bool
+    let count: Int
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(String(format: "%02d", number)).font(.caption).monospaced().foregroundStyle(EARColor.stone)
             Text(city).font(.system(.largeTitle, design: .default, weight: .medium))
             Spacer()
-            Text(available ? "여행 1개" : "준비 중")
-                .font(.caption2.weight(.semibold)).tracking(1.2).foregroundStyle(available ? EARColor.forest : EARColor.stone)
+            Text(count > 0 ? "여행 \(count)개" : "준비 중")
+                .font(.caption2.weight(.semibold)).tracking(1.2).foregroundStyle(count > 0 ? EARColor.forest : EARColor.stone)
         }
         .foregroundStyle(EARColor.ink)
         .padding(.vertical, 18)
