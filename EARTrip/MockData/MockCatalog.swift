@@ -32,7 +32,7 @@ enum MockCatalog {
             title: "자갈치 시장 골목 이야기",
             subtitle: "시장과 바다 사이, 다섯 개의 목소리",
             description: "자갈치 시장을 걸으며 시장과 바다, 그리고 이곳에서 살아온 사람들의 이야기를 듣는 오디오 여행.",
-            coverImage: nil,
+            coverImage: "HarborArtwork",
             distanceKilometers: 1.8,
             estimatedDurationMinutes: 50,
             price: 0,
