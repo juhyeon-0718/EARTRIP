@@ -10,7 +10,7 @@ struct CourseDetailView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     EditorialLabel(text: course.city)
                     Text(course.title)
-                        .font(.system(size: 38, weight: .medium, design: .serif))
+                        .font(.system(.largeTitle, design: .default, weight: .semibold))
                         .tracking(-0.8)
                     Text(course.description)
                         .font(.body).lineSpacing(6).foregroundStyle(EARColor.olive)
@@ -31,7 +31,7 @@ struct CourseDetailView: View {
                             Image(systemName: "arrow.right")
                         }
                         .padding(.horizontal, 22).frame(minHeight: 58)
-                        .foregroundStyle(.white).background(EARColor.forest)
+                        .foregroundStyle(EARColor.forest).background(EARColor.pear, in: RoundedRectangle(cornerRadius: 18))
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 12)
@@ -50,7 +50,7 @@ private struct StoryTimeline: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            EditorialLabel(text: "Story sequence")
+            EditorialLabel(text: "이 여행에서 만날 이야기")
                 .padding(.bottom, 22)
             ForEach(spots) { spot in
                 HStack(alignment: .top, spacing: 18) {
@@ -58,7 +58,7 @@ private struct StoryTimeline: View {
                         .font(.caption).monospaced().foregroundStyle(EARColor.olive)
                         .frame(width: 28, alignment: .leading)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(spot.title).font(.system(.title3, design: .serif, weight: .medium))
+                        Text(spot.title).font(.system(.title3, design: .default, weight: .medium))
                         Text(spot.subtitle).font(.caption).foregroundStyle(EARColor.stone)
                     }
                     Spacer()
