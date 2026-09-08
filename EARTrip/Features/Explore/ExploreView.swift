@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct ExploreView: View {
+    private var cities: [String] {
+        (MockCatalog.cities + MockCatalog.courses.map(\.city)).reduce(into: []) { result, city in
+            if !result.contains(city) { result.append(city) }
+        }
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
@@ -8,7 +13,7 @@ struct ExploreView: View {
                 Text("어느 도시를\n걸어볼까요?")
                     .font(.system(.largeTitle, design: .default, weight: .semibold))
 
-                ForEach(Array(MockCatalog.cities.enumerated()), id: \.element) { index, city in
+                ForEach(Array(cities.enumerated()), id: \.element) { index, city in
                     let courses = MockCatalog.courses.filter { $0.city == city }
                     CityRow(city: city, number: index + 1, count: courses.count)
                     ForEach(courses) { course in
