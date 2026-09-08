@@ -11,14 +11,14 @@ struct MyTripsView: View {
                     .font(.system(.largeTitle, design: .default, weight: .semibold))
 
                 if history.records.isEmpty {
-                    PhotoPlaceholder(height: 250, dark: true, label: "YOUR FIRST WALK")
+                    PhotoPlaceholder(height: 250)
                     Text("아직 기록된 걸음이 없습니다.\n첫 도시의 목소리를 만나보세요.")
                         .font(.system(.title3, design: .default)).lineSpacing(6)
                         .foregroundStyle(EARColor.olive)
                 } else {
                     ForEach(history.records) { record in
                         VStack(alignment: .leading, spacing: 14) {
-                            PhotoPlaceholder(height: 210, dark: true)
+                            PhotoPlaceholder(height: 210, imageName: record.course.coverImage, label: record.course.title)
                             EditorialLabel(text: record.course.city)
                             Text(record.course.title).font(.system(.title2, design: .default, weight: .medium))
                             HStack {
