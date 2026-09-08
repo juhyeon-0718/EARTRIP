@@ -46,8 +46,10 @@ struct LiveTripView: View {
         .mapStyle(.standard(elevation: .flat))
         .mapControls { MapCompass(); MapScaleView() }
         .overlay(alignment: .topLeading) {
-            Label(location.isAuthorized ? "위치 연결됨" : "위치 권한이 필요해요", systemImage: "location.fill")
-                .font(.caption).padding(10).background(EARColor.ivory, in: Capsule()).padding(12)
+            TimelineView(.periodic(from: .now, by: 5)) { context in
+                Label(locationStatus(at: context.date), systemImage: "location.fill")
+                    .font(.caption).padding(10).background(EARColor.ivory, in: Capsule()).padding(12)
+            }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
@@ -123,6 +125,16 @@ struct LiveTripView: View {
         guard let spot = engine.session?.nextSpot,
               let distance = location.distance(to: spot) else { return "— m" }
         return "\(Int(distance)) m · 직선 거리"
+    }
+
+    private func locationStatus(at date: Date) -> String {
+        if location.mode == .mock { return "체험용 위치" }
+        guard location.isAuthorized else { return "위치 권한이 필요해요" }
+        guard let updated = location.lastUpdate, date.timeIntervalSince(updated) < 20 else {
+            return "현재 위치를 확인하고 있어요"
+        }
+        if (location.horizontalAccuracy ?? .infinity) > 65 { return "위치 신호가 약해요" }
+        return "위치 연결됨"
     }
 
     private func followUser() {

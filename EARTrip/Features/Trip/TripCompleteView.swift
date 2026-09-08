@@ -29,7 +29,7 @@ struct TripCompleteView: View {
             .padding(.top, 36)
         }
         .background(EARColor.ivory.ignoresSafeArea())
-        .navigationBarBackButtonHidden()
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear { history.add(course: course, elapsedMinutes: 52) }
     }
 }
