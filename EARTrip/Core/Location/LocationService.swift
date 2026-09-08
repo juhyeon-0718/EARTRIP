@@ -10,6 +10,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private(set) var coordinate: Coordinate?
     private(set) var horizontalAccuracy: Double?
     private(set) var lastErrorDescription: String?
+    private(set) var speed: Double = 0
+    private(set) var lastUpdate: Date?
     var mode: Mode
     var onLocationUpdate: ((Coordinate, Double) -> Void)?
 
@@ -73,6 +75,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard mode == .live, let location = locations.last, location.horizontalAccuracy >= 0 else { return }
+        guard abs(location.timestamp.timeIntervalSinceNow) < 20 else { return }
+        speed = max(0, location.speed)
         publish(.init(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude), accuracy: location.horizontalAccuracy)
     }
 
@@ -83,6 +87,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     private func publish(_ coordinate: Coordinate, accuracy: Double) {
         self.coordinate = coordinate
         horizontalAccuracy = accuracy
+        lastUpdate = Date()
+        lastErrorDescription = nil
         onLocationUpdate?(coordinate, accuracy)
     }
 }
