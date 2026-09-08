@@ -1,5 +1,18 @@
 # EAR TRIP v2
 
+## 2026-09-08 여행 UI 업데이트
+
+- 크림·연두·살구색과 고딕체, 항구 일러스트를 홈/준비/플레이어에 적용했습니다.
+- 여행 지도는 MapKit의 실제 지도와 사용자 위치 추적을 사용합니다. 지도 이동 후 내 위치 버튼으로 추적을 재개합니다.
+- 전체 코스 구간 및 현재 위치에서 다음 이야기까지의 도보 경로는 MKDirections로 조회합니다. 이동 25m 이상 및 30초 간격으로 갱신하고 목적지가 바뀌면 즉시 재조회합니다.
+- Apple 도보 경로 미지원 지역 또는 네트워크 오류 시 안내 문구를 표시하며 직선을 도보 경로로 대신 표시하지 않습니다. GPS 트리거 거리는 기존 직선 거리 기준을 유지합니다.
+- 위치 속도가 감지될 때 지도 캐릭터가 걷습니다. 오래된 위치와 동작 줄이기 설정에서는 모션을 멈춥니다.
+- 여행 일시정지는 자동 재생을 보류하고, 재개 시 최신 위치를 반영합니다. 종료 시 위치 업데이트와 오디오를 정지합니다.
+- 지도/경로는 온라인 기능입니다. 콘텐츠 준비는 여전히 Mock이며 실제 오디오 패키지 오프라인 다운로드를 보장하지 않습니다.
+- 항구 이미지는 실제 장소 사진이 아닌 AI 생성 컨셉 일러스트입니다. 기본 내장 imagegen으로 '크림·살구·연두의 한국 항구 시장, 캐릭터와 글자 없이 배경만'을 요청했습니다. 파일: `EARTrip/Resources/Assets.xcassets/HarborArtwork.imageset/harbor.png`.
+
+커밋 메시지는 한국 시간 날짜 기준 `YYYYMMDD prefix: 한글 설명` 형식을 사용합니다.
+
 > 지도를 보며 여행하는 앱이 아니라, 도시를 걸으면 도시가 말을 거는 앱.
 
 EAR TRIP은 걷는 사람의 위치를 감지하고 특정 장소에 가까워졌을 때 그 장소의 이야기를 자동 재생하는 iOS 오디오 여행 앱입니다. 화면 체류를 늘리는 대신 휴대폰을 내려놓게 하는 것을 제품 원칙으로 삼습니다.
@@ -179,7 +192,7 @@ Codemagic의 automatic signing asset 선택을 사용합니다. `codemagic.yaml`
 
 ### 6. Production App Icon 추가
 
-TestFlight/App Store archive에는 실제 App Icon이 필요합니다. 현재 저장소는 빈 1024×1024 universal iOS 슬롯만 제공하며 임의의 production icon은 포함하지 않습니다.
+TestFlight/App Store archive에는 App Icon이 필요합니다. 현재 저장소에는 승인된 1024×1024 테스트용 아이콘이 포함되어 있습니다. 아래는 이후 아이콘 교체 방법입니다.
 
 1. alpha channel이 없는 최종 1024×1024 PNG를 `EARTrip/Resources/Assets.xcassets/AppIcon.appiconset/`에 추가합니다.
 2. `Contents.json`의 1024×1024 항목에 실제 filename을 지정합니다. 예를 들어 파일명이 `AppIcon-1024.png`이면 해당 항목에 `"filename" : "AppIcon-1024.png"`를 추가합니다.
@@ -251,8 +264,8 @@ EARTrip/MockData/JagalchiCoordinates.swift
 - Dynamic Type에 대응하는 semantic font를 우선 사용
 - 핵심 버튼 최소 높이와 VoiceOver label 제공
 - Warm Ivory / Deep Forest Green 중심, 보라색 및 neon 미사용
-- 사진이 없어도 레이아웃을 검토할 수 있는 비구상적 photo placeholder
-- Live Trip은 길찾기 지도 대신 거리와 trigger radius를 공간적으로 표현
+- 실제 사진 대신 항구 컨셉 일러스트와 공통 이미지 컴포넌트 사용
+- Live Trip은 실제 지도, 사용자 위치, 도보 경로와 이야기 반경을 표시
 - Story Player는 음악 플레이어 대신 장소·좌표·Story sequence를 강조
 
 ## 아직 구현하지 않은 기능
@@ -266,9 +279,9 @@ EARTrip/MockData/JagalchiCoordinates.swift
 - interruption/route change의 전체 production 처리
 - background URLSession과 checksum 기반 완전한 오프라인 패키지
 - analytics, push notification, admin dashboard
-- production 사진, 음원, App Icon
+- production 사진, 음원
 
-빈 `AppIcon.appiconset`은 향후 production icon의 위치만 예약합니다. Debug simulator build에는 App Icon 이름을 강제하지 않지만 Release archive에는 `AppIcon`을 지정합니다. TestFlight workflow의 사전 검사가 실제 1024×1024 PNG와 manifest filename을 확인하므로 제출 전 production icon 추가가 필수입니다.
+`AppIcon.appiconset`에는 테스트용 아이콘이 포함되어 있습니다. Debug simulator build에는 App Icon 이름을 강제하지 않지만 Release archive에는 `AppIcon`을 지정합니다. TestFlight workflow의 사전 검사는 1024×1024 PNG와 manifest filename을 확인합니다.
 
 ## 출시 전 체크리스트
 
