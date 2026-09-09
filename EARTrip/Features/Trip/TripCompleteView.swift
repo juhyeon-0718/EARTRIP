@@ -3,50 +3,51 @@ import SwiftUI
 struct TripCompleteView: View {
     let course: Course
     @Environment(TripHistoryStore.self) private var history
+    @State private var completedAt = Date.now
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 34) {
-                EditorialLabel(text: "Trip complete")
-                VStack(spacing: 4) {
-                    Text(course.title).font(.system(.largeTitle, design: .default, weight: .semibold)).multilineTextAlignment(.center)
-                    Text(course.city).font(.subheadline).foregroundStyle(EARColor.olive)
-                }
-
-                TicketMark(city: course.city)
-
-                HStack(spacing: 40) {
-                    MetricItem(value: String(format: "%.1f", course.distanceKilometers), label: "KM")
-                    MetricItem(value: "\(course.spots.count)", label: "Stories")
-                    MetricItem(value: "52", label: "MIN")
-                }
-                Text("한 도시를 통과한 것이 아니라,\n잠시 그 도시의 이야기를 들었습니다.")
-                    .font(.system(.title3, design: .default)).multilineTextAlignment(.center).lineSpacing(6)
-                    .foregroundStyle(EARColor.olive)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(EARSpacing.page)
-            .padding(.top, 36)
+            VStack(spacing: 28) {
+                Image("CompanionResting").resizable().scaledToFit().frame(height: 240)
+                    .accessibilityHidden(true)
+                Text("오늘의 여행이\n기록됐어요").font(.largeTitle.bold()).multilineTextAlignment(.center)
+                VStack(spacing: 18) {
+                    HStack {
+                        Text(course.city).font(.headline)
+                        Spacer()
+                        Text(completedAt, format: .dateTime.year().month().day()).font(.caption)
+                    }
+                    Text(course.title).font(.title2.bold()).multilineTextAlignment(.center)
+                    Divider()
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 16) { metrics }
+                        VStack(spacing: 12) { metrics }
+                    }
+                }.padding(24).frame(maxWidth: .infinity)
+                    .background(EARColor.paper.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(EARColor.sand, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+                Text("여행의 여운을 오래 간직해요").foregroundStyle(EARColor.olive)
+                NavigationLink { MyTripsView() } label: {
+                    Text("내 여행 기록 보기 →").font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 58)
+                        .background(EARColor.pear, in: RoundedRectangle(cornerRadius: 16))
+                }.buttonStyle(.plain)
+                NavigationLink { ExploreView() } label: {
+                    Text("다른 여행 둘러보기").frame(maxWidth: .infinity, minHeight: 54)
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(EARColor.forest))
+                }.buttonStyle(.plain)
+            }.padding(EARSpacing.page)
         }
+        .foregroundStyle(EARColor.ink)
         .background(EARColor.ivory.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("여행 완료").navigationBarTitleDisplayMode(.inline)
         .onAppear { history.add(course: course, elapsedMinutes: 52) }
     }
-}
 
-private struct TicketMark: View {
-    let city: String
-    var body: some View {
-        ZStack {
-            Circle().stroke(EARColor.forest.opacity(0.28), lineWidth: 1).frame(width: 170, height: 170)
-            Circle().stroke(EARColor.forest, style: StrokeStyle(lineWidth: 2, dash: [3, 5])).frame(width: 145, height: 145)
-            VStack(spacing: 7) {
-                Text("EAR TRIP").font(.caption.weight(.bold)).tracking(2)
-                Image(systemName: "figure.walk").font(.title2)
-                Text("29 AUG 2026").font(.caption2).monospaced()
-            }.foregroundStyle(EARColor.forest).rotationEffect(.degrees(-7))
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("EAR TRIP \(city) 여행 완료 기록")
+    @ViewBuilder private var metrics: some View {
+        Text("\(course.distanceKilometers, specifier: "%.1f") km")
+        Text("이야기 \(course.spots.count)개")
+        // No elapsed-time tracking yet; show the course estimate instead.
+        Text("약 \(course.estimatedDurationMinutes)분 코스")
     }
 }

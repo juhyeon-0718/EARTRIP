@@ -16,7 +16,7 @@ struct LiveTripView: View {
                 MapPolyline(leg.route.polyline).stroke(EARColor.olive.opacity(0.5), lineWidth: 4)
             }
             if let route = routes.nextRoute {
-                MapPolyline(route.polyline).stroke(EARColor.forest, lineWidth: 6)
+                MapPolyline(route.polyline).stroke(EARColor.leaf, lineWidth: 6)
             }
             ForEach(engine.session?.currentCourse.spots ?? []) { spot in
                 if spot.id == engine.session?.nextSpot?.id {
@@ -53,6 +53,8 @@ struct LiveTripView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
+                Capsule().fill(EARColor.stone.opacity(0.4)).frame(width: 40, height: 4)
+                    .frame(maxWidth: .infinity).padding(.top, 10).accessibilityHidden(true)
                 HStack {
                     Text("다음 이야기까지").font(.subheadline).foregroundStyle(EARColor.olive)
                     Spacer()
@@ -89,7 +91,8 @@ struct LiveTripView: View {
                 Button("체험 · 다음 이야기 재생") { engine.triggerCurrentStoryForDemo() }.font(.caption)
                 #endif
             }.padding(.horizontal, 24).padding(.bottom, 12)
-                .foregroundStyle(EARColor.ink).background(EARColor.ivory)
+                .foregroundStyle(EARColor.ink)
+                .background(EARColor.ivory, in: UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24))
         }
         .navigationTitle(engine.session?.currentCourse.title ?? "여행 지도").navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
