@@ -3,7 +3,7 @@ import SwiftUI
 struct StoryDetailView: View {
     let story: StorySpot
     let course: Course
-    @Environment(AudioService.self) private var audio
+    @Environment(TripEngine.self) private var engine
 
     var body: some View {
         ScrollView {
@@ -16,14 +16,16 @@ struct StoryDetailView: View {
                     Text(story.description).font(.body).lineSpacing(7).foregroundStyle(EARColor.olive)
 
                     HStack {
-                        Button { audio.isPlaying ? audio.pause() : audio.play() } label: {
-                            Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
+                        Button { engine.togglePlayback(for: story) } label: {
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                                 .frame(width: 58, height: 58).foregroundStyle(EARColor.ink).background(EARColor.apricot, in: Circle())
                         }
-                        .accessibilityLabel(audio.isPlaying ? "이야기 일시 정지" : "이야기 이어 듣기")
+                        .disabled(!engine.isCurrentStory(story) || engine.session?.state == .loadingStory)
+                        .accessibilityLabel(isPlaying ? "이야기 일시 정지" : "이야기 이어 듣기")
                         VStack(alignment: .leading) {
-                            Text("이야기 이어 듣기").font(.subheadline.weight(.semibold))
-                            ProgressView(value: audio.progress).tint(EARColor.leaf)
+                            Text(engine.isCurrentStory(story) ? "이야기 이어 듣기" : "여행 중 해당 장소에서 들을 수 있어요")
+                                .font(.subheadline.weight(.semibold))
+                            ProgressView(value: engine.isCurrentStory(story) ? engine.playbackProgress : 0).tint(EARColor.leaf)
                         }
                     }
                     .padding(.vertical, 16)
@@ -60,4 +62,5 @@ struct StoryDetailView: View {
     private var nextStory: StorySpot? {
         course.story(after: story)
     }
+    private var isPlaying: Bool { engine.isCurrentStory(story) && engine.isPlaying }
 }

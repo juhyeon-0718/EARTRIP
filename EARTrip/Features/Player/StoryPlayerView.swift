@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StoryPlayerView: View {
     let story: StorySpot
-    @Environment(AudioService.self) private var audio
     @Environment(TripEngine.self) private var engine
     @Environment(\.dismiss) private var dismiss
 
@@ -16,22 +15,26 @@ struct StoryPlayerView: View {
                 Text(story.title).font(.title.weight(.semibold)).multilineTextAlignment(.center)
                 if let course { Text(course.city).foregroundStyle(EARColor.olive) }
                 VStack(spacing: 4) {
-                    Slider(value: Binding(get: { audio.progress }, set: { audio.seek(to: $0 * audio.duration) }), in: 0...1)
+                    Slider(value: Binding(get: { engine.playbackProgress }, set: { engine.seek(to: $0 * engine.duration) }), in: 0...1)
                         .tint(EARColor.leaf).accessibilityLabel("이야기 재생 위치")
-                    HStack { Text(format(audio.currentTime)); Spacer(); Text(format(audio.duration)) }
+                    HStack { Text(format(engine.currentTime)); Spacer(); Text(format(engine.duration)) }
                         .font(.subheadline).monospacedDigit().foregroundStyle(EARColor.olive)
                 }
                 HStack {
-                    control("gobackward.15", "15초 뒤로") { audio.skipBackward() }
+                    control("gobackward.15", "15초 뒤로") { engine.skipBackward() }
                     Spacer()
-                    Button { audio.isPlaying ? engine.pauseStory() : engine.resumeStory() } label: {
-                        Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
+                    Button { engine.togglePlayback(for: story) } label: {
+                        Image(systemName: engine.isPlaying ? "pause.fill" : "play.fill")
                             .font(.title).frame(width: 80, height: 80)
                             .background(EARColor.apricot, in: Circle())
-                    }.accessibilityLabel(audio.isPlaying ? "일시 정지" : "재생")
+                    }.disabled(engine.session?.state == .loadingStory)
+                        .accessibilityLabel(engine.isPlaying ? "일시 정지" : "재생")
                     Spacer()
-                    control("goforward.15", "15초 앞으로") { audio.skipForward() }
+                    control("goforward.15", "15초 앞으로") { engine.skipForward() }
                 }.foregroundStyle(EARColor.forest)
+                if let error = engine.playbackError {
+                    Text(error).font(.footnote).foregroundStyle(EARColor.olive)
+                }
                 if story.audioURL == nil && story.localAudioURL == nil {
                     Text("체험용 이야기 · 실제 음원은 준비 중이에요").font(.footnote).foregroundStyle(EARColor.olive)
                 }
