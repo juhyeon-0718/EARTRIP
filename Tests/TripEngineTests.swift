@@ -4,22 +4,22 @@ import XCTest
 @MainActor
 final class TripEngineTests: XCTestCase {
     func testPausedTripDoesNotTriggerAndResumeUsesLatestLocation() {
-        let location = LocationService(mode: .mock)
-        let engine = TripEngine(locationService: location, audioService: AudioService())
+        let location = FakeTripLocation()
+        let engine = TripEngine(locationService: location, audioService: FakeStoryAudio())
         engine.prepare(course: MockCatalog.jagalchi)
         engine.start()
         engine.pauseTrip()
-        location.pushMockLocation(MockCatalog.jagalchi.spots[0].coordinate)
+        location.send(MockCatalog.jagalchi.spots[0].coordinate)
         XCTAssertNil(engine.session?.currentSpot)
         XCTAssertEqual(engine.session?.state, .paused)
         engine.resumeTrip()
-        XCTAssertEqual(engine.session?.state, .storyPlaying)
+        XCTAssertEqual(engine.session?.state, .loadingStory)
         engine.endTrip()
     }
 
     func testEndingTripPreventsPendingPlayback() async {
-        let audio = AudioService()
-        let engine = TripEngine(locationService: LocationService(mode: .mock), audioService: audio)
+        let audio = FakeStoryAudio()
+        let engine = TripEngine(locationService: FakeTripLocation(), audioService: audio)
         engine.prepare(course: MockCatalog.jagalchi)
         engine.start()
         engine.triggerCurrentStoryForDemo()
@@ -30,8 +30,8 @@ final class TripEngineTests: XCTestCase {
     }
 
     func testPrepareSelectsFirstStory() {
-        let location = LocationService(mode: .mock)
-        let audio = AudioService()
+        let location = FakeTripLocation()
+        let audio = FakeStoryAudio()
         let engine = TripEngine(locationService: location, audioService: audio)
 
         engine.prepare(course: MockCatalog.jagalchi)
@@ -41,8 +41,8 @@ final class TripEngineTests: XCTestCase {
     }
 
     func testStoryCannotCompleteTwice() async {
-        let location = LocationService(mode: .mock)
-        let audio = AudioService()
+        let location = FakeTripLocation()
+        let audio = FakeStoryAudio()
         let engine = TripEngine(locationService: location, audioService: audio)
         engine.prepare(course: MockCatalog.jagalchi)
         engine.start()
@@ -58,18 +58,16 @@ final class TripEngineTests: XCTestCase {
 
     func testEnteringTriggerStartsStoryOnlyOnce() async {
         let first = MockCatalog.jagalchi.spots[0]
-        let location = LocationService(mode: .mock)
-        let audio = AudioService()
+        let location = FakeTripLocation()
+        let audio = FakeStoryAudio()
         let engine = TripEngine(locationService: location, audioService: audio)
         engine.prepare(course: MockCatalog.jagalchi)
         engine.start()
 
-        location.pushMockLocation(first.coordinate)
-        location.pushMockLocation(first.coordinate)
-        await Task.yield()
-
+        location.send(first.coordinate)
+        location.send(first.coordinate)
         XCTAssertEqual(engine.session?.currentSpot?.id, first.id)
-        XCTAssertEqual(engine.session?.state, .storyPlaying)
+        XCTAssertEqual(engine.session?.state, .loadingStory)
         XCTAssertTrue(engine.session?.completedSpotIDs.isEmpty == true)
     }
 }
