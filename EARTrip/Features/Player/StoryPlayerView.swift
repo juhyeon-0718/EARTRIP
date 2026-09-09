@@ -9,15 +9,15 @@ struct StoryPlayerView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                PhotoPlaceholder(height: 260, imageName: story.image ?? course?.coverImage, label: story.title)
-                    .overlay(alignment: .bottomTrailing) { TravelCompanion().padding(24) }
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                PhotoPlaceholder(height: 310, imageName: story.image ?? course?.coverImage, label: story.title)
+                    .overlay(alignment: .bottomTrailing) { TravelCompanion().scaleEffect(1.3).padding(32) }
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                 Text("이야기 \(story.order)").font(.subheadline).foregroundStyle(EARColor.olive)
                 Text(story.title).font(.title.weight(.semibold)).multilineTextAlignment(.center)
                 if let course { Text(course.city).foregroundStyle(EARColor.olive) }
                 VStack(spacing: 4) {
                     Slider(value: Binding(get: { audio.progress }, set: { audio.seek(to: $0 * audio.duration) }), in: 0...1)
-                        .tint(EARColor.olive).accessibilityLabel("이야기 재생 위치")
+                        .tint(EARColor.leaf).accessibilityLabel("이야기 재생 위치")
                     HStack { Text(format(audio.currentTime)); Spacer(); Text(format(audio.duration)) }
                         .font(.subheadline).monospacedDigit().foregroundStyle(EARColor.olive)
                 }

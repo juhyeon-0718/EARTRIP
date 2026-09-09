@@ -8,7 +8,8 @@ struct StoryDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                PhotoPlaceholder(height: 350, imageName: story.image ?? course.coverImage, label: story.title)
+                PhotoPlaceholder(height: 290, imageName: story.image ?? course.coverImage, label: story.title)
+                    .overlay(alignment: .bottomTrailing) { TravelCompanion().padding(24) }
                 VStack(alignment: .leading, spacing: 24) {
                     EditorialLabel(text: course.city)
                     Text(story.title).font(.system(.largeTitle, design: .default, weight: .medium))
@@ -17,21 +18,22 @@ struct StoryDetailView: View {
                     HStack {
                         Button { audio.isPlaying ? audio.pause() : audio.play() } label: {
                             Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
-                                .frame(width: 46, height: 46).foregroundStyle(.white).background(EARColor.forest, in: Circle())
+                                .frame(width: 58, height: 58).foregroundStyle(EARColor.ink).background(EARColor.apricot, in: Circle())
                         }
+                        .accessibilityLabel(audio.isPlaying ? "이야기 일시 정지" : "이야기 이어 듣기")
                         VStack(alignment: .leading) {
-                            Text("PLACE STORY").font(.caption2).tracking(1.5)
-                            ProgressView(value: audio.progress).tint(EARColor.forest)
+                            Text("이야기 이어 듣기").font(.subheadline.weight(.semibold))
+                            ProgressView(value: audio.progress).tint(EARColor.leaf)
                         }
                     }
                     .padding(.vertical, 16)
 
-                    EditorialLabel(text: "Location")
+                    EditorialLabel(text: "이야기가 있는 곳")
                     Text("\(story.coordinate.latitude, specifier: "%.5f")° N  \(story.coordinate.longitude, specifier: "%.5f")° E")
                         .font(.caption).monospaced().foregroundStyle(EARColor.stone)
 
                     if let nextStory {
-                        EditorialLabel(text: "Next story")
+                        EditorialLabel(text: "다음 이야기")
                             .padding(.top, 16)
                         NavigationLink(value: AppRoute.story(nextStory, course: course)) {
                             HStack(alignment: .firstTextBaseline) {
@@ -51,6 +53,7 @@ struct StoryDetailView: View {
             }
         }
         .background(EARColor.ivory.ignoresSafeArea())
+        .navigationTitle("장소 이야기").navigationBarTitleDisplayMode(.inline)
         .earTripDestinations()
     }
 
