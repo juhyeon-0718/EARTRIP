@@ -92,14 +92,14 @@ final class AudioService: StoryAudioPlayer {
         let observedLoadID = loadID
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
             Task { @MainActor in
-                guard let self, loadID == observedLoadID, time.seconds.isFinite else { return }
-                currentTime = time.seconds
+                guard let self, self.loadID == observedLoadID, time.seconds.isFinite else { return }
+                self.currentTime = time.seconds
             }
         }
         completionObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { [weak self] _ in
             Task { @MainActor in
-                guard let self, loadID == observedLoadID else { return }
-                finishPlayback()
+                guard let self, self.loadID == observedLoadID else { return }
+                self.finishPlayback()
             }
         }
     }
