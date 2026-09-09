@@ -1,5 +1,15 @@
 # EAR TRIP v2
 
+## 2026-09-09 책임 경계 리팩터링
+
+재생 명령을 TripEngine으로 통일하고, 완료 기록 저장을 화면 생명주기에서 분리했습니다.
+화면은 주입된 CourseCatalog를 사용하며, 위치·오디오 인터페이스를 통해 테스트에서 장치를 대체합니다.
+Models는 Foundation에만 의존하고, CI에서 기본 의존성 규칙을 검사합니다.
+상세한 협력 흐름·대안·한계·협업 규칙은 [아키텍처 문서](docs/architecture.md)를 참고하세요.
+
+단일 iOS target의 논리 모듈 구조이며 아직 별도 Swift Package는 아닙니다.
+여행 기록은 세션별 실제 경과 시간을 저장하지만 현재 메모리 기반이므로 앱 재실행 후 유지되지는 않습니다.
+
 ## 2026-09-08 여행 UI 업데이트
 
 ### 공통 브랜드와 코스 콘텐츠 분리
@@ -259,11 +269,11 @@ App Store Connect가 export compliance 질문을 표시하면 현재 앱이 Appl
 EARTrip/MockData/JagalchiCoordinates.swift
 ```
 
-`LocationService(mode: .mock)`을 만들고 `pushMockLocation(_:accuracy:)`를 호출하면 실제 GPS 없이 trigger를 테스트할 수 있습니다. 단위 테스트가 이 경로를 사용합니다. Live Trip 화면의 `DEMO · 다음 이야기 재생`은 아직 실제 음원 URL이 없는 Phase 1에서 전체 UX를 확인하기 위한 명시적 simulator fallback입니다.
+`LocationService(mode: .mock)`과 `pushMockLocation(_:accuracy:)`로 기기 없이 위치 이벤트를 확인할 수 있습니다. 엔진 단위 테스트는 `FakeTripLocation`과 `FakeStoryAudio`를 주입하여 Apple 장치를 생성하지 않습니다. Debug의 Live Trip 화면에 있는 `체험 · 다음 이야기 재생` 버튼으로 음원 없는 흐름을 확인할 수 있습니다.
 
 ## Offline design
 
-`DownloadService`는 서버가 연결되면 개별 파일을 application support 아래 course별 디렉터리에 저장할 수 있습니다. UI는 `notDownloaded`, `downloading(progress:)`, `ready`, `failed`를 표현합니다. 현재 자갈치 코스는 짧은 Mock 준비 흐름을 사용합니다.
+`DownloadService.downloadPackage`는 전체 리소스 목록을 시도별 디렉터리에 다운로드하고 모든 파일이 완료되어야 `ready(localDirectory:)`로 전환합니다. 실패·취소한 시도의 파일은 정리합니다. `demoReady`는 체험 준비 상태이며 실제 오프라인 패키지를 의미하지 않습니다. 현재 코스는 이 Mock 준비 흐름을 사용합니다.
 
 향후 background `URLSessionConfiguration.background`, manifest checksum, 부분 재시도, 저장 공간 검사로 확장할 수 있도록 다운로드 책임을 View 밖에 두었습니다.
 
