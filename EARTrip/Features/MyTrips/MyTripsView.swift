@@ -29,6 +29,7 @@ struct MyTripsView: View {
                             HStack {
                                 Text("\(record.course.distanceKilometers, specifier: "%.1f") km")
                                 Text("이야기 \(record.course.spots.count)개")
+                                Text("\(record.elapsedMinutes)분")
                             }
                             .font(.caption).tracking(1).foregroundStyle(EARColor.stone)
                             Text(record.completedAt, format: .dateTime.year().month().day())
