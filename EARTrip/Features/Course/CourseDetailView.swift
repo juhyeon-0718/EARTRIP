@@ -6,7 +6,7 @@ struct CourseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                PhotoPlaceholder(height: 410, imageName: course.coverImage, label: course.title)
+                PhotoPlaceholder(height: 230, imageName: course.coverImage, label: course.title)
                 VStack(alignment: .leading, spacing: 24) {
                     EditorialLabel(text: course.city)
                     Text(course.title)
@@ -41,6 +41,7 @@ struct CourseDetailView: View {
         }
         .background(EARColor.ivory.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("여행 소개")
         .earTripDestinations()
     }
 }
@@ -55,8 +56,9 @@ private struct StoryTimeline: View {
             ForEach(spots) { spot in
                 HStack(alignment: .top, spacing: 18) {
                     Text(String(format: "%02d", spot.order))
-                        .font(.caption).monospaced().foregroundStyle(EARColor.olive)
-                        .frame(width: 28, alignment: .leading)
+                        .font(.subheadline.weight(.semibold)).monospaced().foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .background(EARColor.leaf, in: Circle())
                     VStack(alignment: .leading, spacing: 6) {
                         Text(spot.title).font(.system(.title3, design: .default, weight: .medium))
                         Text(spot.subtitle).font(.caption).foregroundStyle(EARColor.stone)
