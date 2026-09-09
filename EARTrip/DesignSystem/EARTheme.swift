@@ -6,7 +6,8 @@ enum EARColor {
     static let pear = Color(red: 202 / 255, green: 218 / 255, blue: 153 / 255)
     static let apricot = Color(red: 246 / 255, green: 199 / 255, blue: 173 / 255)
     static let ink = Color(red: 23 / 255, green: 25 / 255, blue: 24 / 255)
-    static let olive = Color(red: 108 / 255, green: 113 / 255, blue: 86 / 255)
+    static let olive = Color(red: 87 / 255, green: 96 / 255, blue: 102 / 255)
+    static let leaf = Color(red: 111 / 255, green: 154 / 255, blue: 77 / 255)
     static let sand = Color(red: 220 / 255, green: 207 / 255, blue: 179 / 255)
     static let stone = Color(red: 139 / 255, green: 136 / 255, blue: 127 / 255)
     static let paper = Color(red: 238 / 255, green: 232 / 255, blue: 218 / 255)
@@ -47,18 +48,18 @@ struct MetricItem: View {
 struct PrimaryActionButton: View {
     let title: String
     var action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Button(action: action) {
             HStack {
                 Text(title).font(.headline)
-                Spacer()
                 Image(systemName: "arrow.right").accessibilityHidden(true)
             }
             .padding(.horizontal, 22)
-            .frame(minHeight: 58)
-            .foregroundStyle(EARColor.forest)
-            .background(EARColor.pear, in: RoundedRectangle(cornerRadius: 18))
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .foregroundStyle(isEnabled ? EARColor.ink : EARColor.olive)
+            .background(isEnabled ? EARColor.pear : EARColor.paper, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
     }

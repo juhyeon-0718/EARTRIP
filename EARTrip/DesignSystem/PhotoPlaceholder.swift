@@ -12,12 +12,7 @@ struct PhotoPlaceholder: View {
                 if let imageName, let image = UIImage(named: imageName) {
                     Image(uiImage: image).resizable().scaledToFill()
                 } else {
-                    ZStack {
-                        EARColor.paper
-                        Circle().fill(EARColor.pear).frame(width: 140, height: 140).offset(x: -65, y: 35)
-                        Circle().fill(EARColor.apricot).frame(width: 80, height: 80).offset(x: 85, y: -45)
-                        TravelCompanion()
-                    }
+                    Image("TravelHero").resizable().scaledToFill()
                 }
             }.frame(width: proxy.size.width, height: height).clipped()
         }
