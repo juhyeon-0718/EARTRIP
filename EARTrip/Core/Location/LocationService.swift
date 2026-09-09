@@ -3,7 +3,7 @@ import Observation
 
 @MainActor
 @Observable
-final class LocationService: NSObject, CLLocationManagerDelegate {
+final class LocationService: NSObject, TripLocationSource, @preconcurrency CLLocationManagerDelegate {
     enum Mode: Sendable, Equatable { case live, mock }
 
     private(set) var authorizationStatus: CLAuthorizationStatus
@@ -54,8 +54,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
 
     func isInsideTriggerRadius(of spot: StorySpot) -> Bool {
         guard let distance = distance(to: spot) else { return false }
-        let accuracyPadding = min(max(horizontalAccuracy ?? 0, 0), 25)
-        return distance <= spot.triggerRadius + accuracyPadding
+        return StoryTriggerPolicy().contains(distance: distance, radius: spot.triggerRadius,
+                                             accuracy: horizontalAccuracy ?? .infinity)
     }
 
     func pushMockLocation(_ coordinate: Coordinate, accuracy: Double = 5) {
@@ -64,8 +64,7 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     }
 
     static func distance(from: Coordinate, to: Coordinate) -> Double {
-        CLLocation(latitude: from.latitude, longitude: from.longitude)
-            .distance(from: CLLocation(latitude: to.latitude, longitude: to.longitude))
+        from.distance(to: to)
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

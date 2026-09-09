@@ -17,6 +17,21 @@ final class WalkingRouteService {
     @ObservationIgnored private var lastOrigin: Coordinate?
     @ObservationIgnored private var lastDestination: UUID?
     @ObservationIgnored private var lastRequest = Date.distantPast
+    @ObservationIgnored private var followID = UUID()
+
+    /// The view owns task lifetime; routing owns refresh policy for supplied coordinates.
+    func followNextStory(target: () -> (origin: Coordinate, spot: StorySpot)?) async {
+        let id = UUID()
+        followID = id
+        clearNextRoute()
+        defer { if followID == id { clearNextRoute() } }
+        while !Task.isCancelled {
+            if let next = target() {
+                await update(from: next.origin, to: next.spot)
+            }
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+        }
+    }
 
     func loadCourse(_ course: Course) async {
         courseLegs = []
@@ -36,7 +51,7 @@ final class WalkingRouteService {
 
     func update(from origin: Coordinate, to spot: StorySpot, force: Bool = false) async {
         let destinationChanged = lastDestination != spot.id
-        let moved = lastOrigin.map { LocationService.distance(from: $0, to: origin) >= 25 } ?? true
+        let moved = lastOrigin.map { $0.distance(to: origin) >= 25 } ?? true
         guard force || destinationChanged || (Date().timeIntervalSince(lastRequest) >= 30 && (moved || nextRoute == nil)) else { return }
         activeDirections?.cancel()
         if destinationChanged { nextRoute = nil }
