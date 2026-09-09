@@ -11,5 +11,8 @@ struct RootTabView: View {
                 .tabItem { Label("내 여행", systemImage: "person") }
         }
         .background(EARColor.ivory)
+        .tint(EARColor.forest)
+        .toolbarBackground(EARColor.ivory, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
     }
 }
