@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
-    private let courses = MockCatalog.courses
+    @Environment(CourseCatalog.self) private var catalog
+    private var courses: [Course] { catalog.courses }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -46,4 +47,4 @@ struct HomeView: View {
         .earTripDestinations()
     }
 }
-#Preview { NavigationStack { HomeView() } }
+#Preview { NavigationStack { HomeView() }.environment(CourseCatalog(courses: MockCatalog.courses)) }
