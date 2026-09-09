@@ -3,12 +3,13 @@ import Observation
 
 @MainActor
 @Observable
-final class AudioService {
+final class AudioService: StoryAudioPlayer {
     private(set) var currentStory: StorySpot?
     private(set) var currentTime: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
     private(set) var isPlaying = false
-    var onPlaybackCompleted: (() -> Void)?
+    var onPlaybackCompleted: ((UUID) -> Void)?
+    @ObservationIgnored private var loadID = UUID()
 
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var timeObserver: Any?
@@ -19,23 +20,27 @@ final class AudioService {
         return min(max(currentTime / duration, 0), 1)
     }
 
-    func load(_ story: StorySpot) async {
+    func load(_ story: StorySpot) async throws {
         stop()
+        let requestID = loadID
         currentStory = story
         duration = story.duration
         guard let url = story.localAudioURL ?? story.audioURL else { return }
-        configureAudioSession()
+        try configureAudioSession()
         let player = AVPlayer(url: url)
         self.player = player
         observe(player)
-        if let item = player.currentItem,
-           let loadedDuration = try? await item.asset.load(.duration) {
+        if let item = player.currentItem {
+            let loadedDuration = try await item.asset.load(.duration)
+            try Task.checkCancellation()
+            guard loadID == requestID else { throw CancellationError() }
             let seconds = loadedDuration.seconds
             if seconds.isFinite { duration = seconds }
         }
     }
 
     func play() {
+        guard currentStory != nil else { return }
         player?.play()
         isPlaying = true
     }
@@ -48,6 +53,7 @@ final class AudioService {
     func resume() { play() }
 
     func stop() {
+        loadID = UUID()
         if let timeObserver { player?.removeTimeObserver(timeObserver) }
         if let completionObserver { NotificationCenter.default.removeObserver(completionObserver) }
         timeObserver = nil
@@ -55,6 +61,8 @@ final class AudioService {
         player?.pause()
         player = nil
         currentTime = 0
+        duration = 0
+        currentStory = nil
         isPlaying = false
     }
 
@@ -74,24 +82,31 @@ final class AudioService {
         if currentTime >= duration { finishPlayback() }
     }
 
-    private func configureAudioSession() {
+    private func configureAudioSession() throws {
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .spokenAudio, options: [.allowAirPlay, .allowBluetoothA2DP])
-        try? session.setActive(true)
+        try session.setCategory(.playback, mode: .spokenAudio, options: [.allowAirPlay, .allowBluetoothA2DP])
+        try session.setActive(true)
     }
 
     private func observe(_ player: AVPlayer) {
+        let observedLoadID = loadID
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
-            Task { @MainActor in self?.currentTime = time.seconds }
+            Task { @MainActor in
+                guard let self, loadID == observedLoadID, time.seconds.isFinite else { return }
+                currentTime = time.seconds
+            }
         }
         completionObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.finishPlayback() }
+            Task { @MainActor in
+                guard let self, loadID == observedLoadID else { return }
+                finishPlayback()
+            }
         }
     }
 
     private func finishPlayback() {
         isPlaying = false
         currentTime = duration
-        onPlaybackCompleted?()
+        if let id = currentStory?.id { onPlaybackCompleted?(id) }
     }
 }
