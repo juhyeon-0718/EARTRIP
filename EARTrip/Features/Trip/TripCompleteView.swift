@@ -3,7 +3,10 @@ import SwiftUI
 struct TripCompleteView: View {
     let course: Course
     @Environment(TripHistoryStore.self) private var history
-    @State private var completedAt = Date.now
+    @Environment(TripEngine.self) private var engine
+    private var record: TripRecord? {
+        history.records.first { $0.id == engine.session?.id && $0.course.id == course.id }
+    }
 
     var body: some View {
         ScrollView {
@@ -15,7 +18,7 @@ struct TripCompleteView: View {
                     HStack {
                         Text(course.city).font(.headline)
                         Spacer()
-                        Text(completedAt, format: .dateTime.year().month().day()).font(.caption)
+                        if let record { Text(record.completedAt, format: .dateTime.year().month().day()).font(.caption) }
                     }
                     Text(course.title).font(.title2.bold()).multilineTextAlignment(.center)
                     Divider()
@@ -41,13 +44,11 @@ struct TripCompleteView: View {
         .foregroundStyle(EARColor.ink)
         .background(EARColor.ivory.ignoresSafeArea())
         .navigationTitle("여행 완료").navigationBarTitleDisplayMode(.inline)
-        .onAppear { history.add(course: course, elapsedMinutes: 52) }
     }
 
     @ViewBuilder private var metrics: some View {
         Text("\(course.distanceKilometers, specifier: "%.1f") km")
         Text("이야기 \(course.spots.count)개")
-        // No elapsed-time tracking yet; show the course estimate instead.
-        Text("약 \(course.estimatedDurationMinutes)분 코스")
+        if let record { Text("\(record.elapsedMinutes)분") }
     }
 }

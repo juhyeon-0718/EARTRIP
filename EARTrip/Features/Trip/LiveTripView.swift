@@ -109,14 +109,7 @@ struct LiveTripView: View {
             if let course = engine.session?.currentCourse { await routes.loadCourse(course) }
         }
         .task(id: engine.session?.nextSpot?.id) {
-            routes.clearNextRoute()
-            while !Task.isCancelled {
-                if let origin = location.coordinate, let spot = engine.session?.nextSpot,
-                   (location.horizontalAccuracy ?? .infinity) <= 65 {
-                    await routes.update(from: origin, to: spot)
-                }
-                do { try await Task.sleep(for: .seconds(5)) } catch { return }
-            }
+            await routes.followNextStory { engine.routeTarget }
         }
         .onChange(of: engine.session?.currentSpot) { _, spot in presentedStory = spot }
         .fullScreenCover(item: $presentedStory) { story in NavigationStack { StoryPlayerView(story: story) } }

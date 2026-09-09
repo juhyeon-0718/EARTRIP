@@ -60,7 +60,7 @@ struct TripPreparationView: View {
     private var progress: Double {
         switch downloads.state(for: course) {
         case .downloading(let progress): progress
-        case .ready: 1
+        case .ready, .demoReady: 1
         default: 0
         }
     }
