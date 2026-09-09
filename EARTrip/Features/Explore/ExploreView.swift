@@ -9,13 +9,16 @@ struct ExploreView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-                EditorialLabel(text: "도시별 여행")
-                Text("어느 도시를\n걸어볼까요?")
+                Text("어느 도시가 궁금하세요?")
                     .font(.system(.largeTitle, design: .default, weight: .semibold))
 
                 ForEach(Array(cities.enumerated()), id: \.element) { index, city in
                     let courses = MockCatalog.courses.filter { $0.city == city }
-                    CityRow(city: city, number: index + 1, count: courses.count)
+                    VStack(alignment: .leading, spacing: 12) {
+                        PhotoPlaceholder(height: 170, imageName: artwork(for: city), label: "\(city) 여행 일러스트")
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        CityRow(city: city, number: index + 1, count: courses.count)
+                    }
                     ForEach(courses) { course in
                         NavigationLink(value: AppRoute.course(course)) {
                             HStack {
@@ -35,6 +38,15 @@ struct ExploreView: View {
         .navigationBarTitleDisplayMode(.inline)
         .earTripDestinations()
     }
+
+    private func artwork(for city: String) -> String? {
+        switch city {
+        case "서울": "SeoulArtwork"
+        case "부산": "HarborArtwork"
+        case "경주": "GyeongjuArtwork"
+        default: MockCatalog.courses.first(where: { $0.city == city })?.coverImage
+        }
+    }
 }
 
 private struct CityRow: View {
@@ -44,15 +56,13 @@ private struct CityRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(String(format: "%02d", number)).font(.caption).monospaced().foregroundStyle(EARColor.stone)
-            Text(city).font(.system(.largeTitle, design: .default, weight: .medium))
+            Text(city).font(.title2.bold())
             Spacer()
             Text(count > 0 ? "여행 \(count)개" : "준비 중")
                 .font(.caption2.weight(.semibold)).tracking(1.2).foregroundStyle(count > 0 ? EARColor.forest : EARColor.stone)
         }
         .foregroundStyle(EARColor.ink)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) { Rectangle().fill(EARColor.sand).frame(height: 1) }
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
     }
 }
