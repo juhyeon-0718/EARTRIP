@@ -22,6 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check architecture boundaries
+        run: python3 scripts/check_architecture.py
+
       - name: Inspect Apple toolchain
         run: |
           set -euo pipefail
