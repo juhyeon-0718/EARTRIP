@@ -1,11 +1,8 @@
 import SwiftUI
 
 struct ExploreView: View {
-    private var cities: [String] {
-        (MockCatalog.cities + MockCatalog.courses.map(\.city)).reduce(into: []) { result, city in
-            if !result.contains(city) { result.append(city) }
-        }
-    }
+    @Environment(CourseCatalog.self) private var catalog
+    private var cities: [String] { catalog.cities }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
@@ -13,7 +10,7 @@ struct ExploreView: View {
                     .font(.system(.largeTitle, design: .default, weight: .semibold))
 
                 ForEach(Array(cities.enumerated()), id: \.element) { index, city in
-                    let courses = MockCatalog.courses.filter { $0.city == city }
+                    let courses = catalog.courses(in: city)
                     VStack(alignment: .leading, spacing: 12) {
                         PhotoPlaceholder(height: 170, imageName: artwork(for: city), label: "\(city) 여행 일러스트")
                             .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -44,7 +41,7 @@ struct ExploreView: View {
         case "서울": "SeoulArtwork"
         case "부산": "HarborArtwork"
         case "경주": "GyeongjuArtwork"
-        default: MockCatalog.courses.first(where: { $0.city == city })?.coverImage
+        default: catalog.courses(in: city).first?.coverImage
         }
     }
 }
@@ -67,4 +64,4 @@ private struct CityRow: View {
     }
 }
 
-#Preview { NavigationStack { ExploreView() } }
+#Preview { NavigationStack { ExploreView() }.environment(CourseCatalog(courses: MockCatalog.courses, cities: MockCatalog.cities)) }
