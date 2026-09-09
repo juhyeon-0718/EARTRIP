@@ -154,6 +154,8 @@ GitHub 저장소의 **Actions** 탭에서 결과를 볼 수 있습니다.
 
 ## 첫 TestFlight 배포 방법
 
+현재 배포 범위는 **내부 테스트만**입니다. `submit_to_testflight: false`는 App Store Connect 업로드를 끄는 설정이 아니라 외부 Beta App Review 자동 제출을 끄는 설정입니다. `submit_to_app_store: false`로 정식 심사도 제출하지 않습니다. 업로드 처리 후 App Store Connect → EARTRIP → TestFlight → 내부 테스트 그룹에서 빌드를 추가합니다. 외부 테스트용 피드백 이메일 및 심사 연락처를 입력할 필요는 없습니다. 내부 그룹의 자동 배포 설정을 사용하는 경우 새 빌드가 자동으로 제공될 수 있습니다. 수출 규정 준수 질문이 표시되면 계정 소유자가 확인해야 합니다.
+
 `EAR TRIP - TestFlight` workflow는 GitHub의 검증된 commit에서 Release archive를 만들고, Codemagic이 App Store용 signing asset을 적용해 IPA를 생성한 뒤 TestFlight에 업로드하는 수동 배포 경로입니다. 인증서, provisioning profile, API private key는 저장소나 YAML에 넣지 않습니다.
 
 ### 1. Apple Developer에서 App ID 등록
