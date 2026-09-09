@@ -4,24 +4,25 @@ import SwiftUI
 @MainActor
 struct EARTripApp: App {
     @State private var locationService: LocationService
-    @State private var audioService: AudioService
     @State private var downloadService = DownloadService()
-    @State private var historyStore = TripHistoryStore()
+    @State private var historyStore: TripHistoryStore
     @State private var tripEngine: TripEngine
+    @State private var catalog = CourseCatalog(courses: MockCatalog.courses, cities: MockCatalog.cities)
 
     init() {
         let location = LocationService()
         let audio = AudioService()
+        let history = TripHistoryStore()
         _locationService = State(initialValue: location)
-        _audioService = State(initialValue: audio)
-        _tripEngine = State(initialValue: TripEngine(locationService: location, audioService: audio))
+        _historyStore = State(initialValue: history)
+        _tripEngine = State(initialValue: TripEngine(locationService: location, audioService: audio, history: history))
     }
 
     var body: some Scene {
         WindowGroup {
             RootTabView()
                 .environment(locationService)
-                .environment(audioService)
+                .environment(catalog)
                 .environment(downloadService)
                 .environment(historyStore)
                 .environment(tripEngine)
